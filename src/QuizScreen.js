@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 
 const QuizScreen = () => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [score, setScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [answerError, setAnswerError] = useState("");
 
   useEffect(() => {
     fetchQuestions();
@@ -13,8 +15,9 @@ const QuizScreen = () => {
 
   const fetchQuestions = async () => {
     try {
-      const response = await axios.get("https://opentdb.com/api.php?amount=5");
-      setQuestions(response.data.results);
+      const response = await fetch("https://opentdb.com/api.php?amount=5");
+      const data = await response.json();
+      setQuestions(data.results);
     } catch (error) {
       console.error("Error fetching questions:", error);
     }
@@ -22,15 +25,30 @@ const QuizScreen = () => {
 
   const handleAnswerSelection = (answer) => {
     setSelectedAnswer(answer);
+    setAnswerError("");
   };
 
   const handleNextQuestion = () => {
-    if (selectedAnswer === questions[currentQuestion].correct_answer) {
-      setScore(score + 1);
+    if (selectedAnswer === "") {
+      setAnswerError("Please select an answer");
+      return;
     }
 
+    if (selectedAnswer === questions[currentQuestion].correct_answer) {
+      setScore(score + 1);
+      setFeedbackText("Correct!");
+    } else {
+      setFeedbackText("Incorrect!");
+    }
+
+    setShowFeedback(true);
     setSelectedAnswer("");
-    setCurrentQuestion(currentQuestion + 1);
+    setTimeout(() => {
+      setShowFeedback(false);
+      setCurrentQuestion(currentQuestion + 1);
+      setFeedbackText("");
+      setAnswerError("");
+    }, 1500);
   };
 
   if (questions.length === 0) {
@@ -74,7 +92,9 @@ const QuizScreen = () => {
           ></label>
         </div>
       ))}
+      {answerError && <p className="error">{answerError}</p>}
       <button onClick={handleNextQuestion}>Next</button>
+      {showFeedback && <p>{feedbackText}</p>}
     </div>
   );
 };
